@@ -37,33 +37,11 @@ class ShowPanelSheet extends StackedView<ShowPanelSheetModel> {
           maxHeight: height,
           renderPanelSheet: false,
           controller: viewModel.controller,
-          panelBuilder: () => _buildPanelWidget(viewModel),
-          //backdropEnabled: true,
+          panelBuilder: (sc) => _buildPanelWidget(viewModel),
           defaultPanelState: PanelState.OPEN,
-          //isDraggable: 关闭时滑动列表到头，不能连同面板一起下拉到底
           isDraggable: viewModel.panelBaseService.isDraggable,
-          onPanelClosed: () {
-            //面板下滑到关闭时，应该让sheet一起销毁
-            Navigator.pop(context); //(context, Duration(milliseconds: 100));
-            print("close");
-          },
-          scrollController: viewModel.panelBaseService.sc,
-          //disableDraggableOnScrolling: true,
         ),
       ],
-    );
-  }
-
-  Widget _scrollingList(ScrollController sc) {
-    return ListView.builder(
-      controller: sc,
-      itemCount: 50,
-      itemBuilder: (BuildContext context, int i) {
-        return Container(
-          padding: const EdgeInsets.all(12.0),
-          child: Text("$i"),
-        );
-      },
     );
   }
 

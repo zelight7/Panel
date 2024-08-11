@@ -25,14 +25,14 @@ class PeronalCenterView extends StackedView<PeronalCenterViewModel> {
 
   Widget _buildContentWidget(
       BuildContext context, PeronalCenterViewModel viewModel) {
-    print("personal center build");
+    //("personal center build");
     return Expanded(
       child: ListView(
-        controller: viewModel.panelBaseService.sc,
+        controller: viewModel.sc,
         children: <Widget>[
           Column(
             children: [
-              //FloatingActionButton(onPressed: viewModel.onButtonPressed),
+              FloatingActionButton(onPressed: viewModel.onButtonPressed),
               _buildAccountBox(context, viewModel),
               SizedBox(height: 10),
               _buildSecurityBox(context, viewModel),
@@ -66,6 +66,8 @@ class PeronalCenterView extends StackedView<PeronalCenterViewModel> {
           child: InkWell(
             onTap: () {
               //viewModel.setPanelScToGameMenu();
+              viewModel.sc.dispose();
+              //print("PersonalSc销毁");
               Navigator.pop(context);
             },
             child:

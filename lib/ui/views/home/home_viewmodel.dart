@@ -34,18 +34,21 @@ class HomeViewModel extends BaseViewModel {
       variant: BottomSheetType.showPanel,
       isScrollControlled: true,
       enableDrag: false,
+      //barrierDismissible: false,
+      useRootNavigator: true,
+      //exitBottomSheetDuration: Duration(milliseconds: 0),
     );
   }
 
   void onTapButton(BuildContext context) {
-    // _bottomSheetService.showCustomSheet(
-    //   variant: BottomSheetType.notice,
-    //   isScrollControlled: true,
-    // );
-    showCupertinoModalBottomSheet(
-      context: context,
-      builder: (context) => PanelView(),
-      expand: true,
+    _bottomSheetService.showCustomSheet(
+      variant: BottomSheetType.notice,
+      isScrollControlled: true,
     );
+    // showCupertinoModalBottomSheet(
+    //   context: context,
+    //   builder: (context) => PanelView(),
+    //   expand: true,
+    // );
   }
 }

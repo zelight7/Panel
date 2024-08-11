@@ -31,7 +31,7 @@ class GameMenuView extends StackedView<GameMenuViewModel> {
       BuildContext context, GameMenuViewModel viewModel) {
     return Expanded(
       child: ListView(
-        controller: viewModel.panelBaseService.sc,
+        controller: viewModel.sc,
         children: [
           Column(
             children: [
@@ -259,7 +259,10 @@ class GameMenuView extends StackedView<GameMenuViewModel> {
           return const PeronalCenterView();
         },
       ),
-    );
+    ).then((_) {
+      // print("回到gameMenu设置sc");
+      viewModel.setPanelSc();
+    });
   }
 
   @override

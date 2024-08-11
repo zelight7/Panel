@@ -18,27 +18,17 @@ class PanelSheetNavigator extends NavigatorObserver {
   final _panelBaseService = locator<PanelBaseService>();
   @override
   void didPop(Route<dynamic> route, Route<dynamic>? previousRoute) {
-    //_panelBaseService.resetScrollController();
-    print("didpop rebuild");
     _panelBaseService.isDraggable = true;
   }
-
-  // void didPush(Route<dynamic> route, Route<dynamic>? previousRoute) {
-  //   //_panelBaseService.resetScrollController();
-  //   _panelBaseService.isDraggable = true;
-  // }
 
   @override
   void didStartUserGesture(
       Route<dynamic> route, Route<dynamic>? previousRoute) {
-    print("didStartUserGesture");
     _panelBaseService.isDraggable = true;
-    //panelBaseService.controller.panelPosition = 1.0;
   }
 
   @override
   void didStopUserGesture() {
-    print("didStopUserGesture");
     _panelBaseService.isDraggable = true;
   }
 }

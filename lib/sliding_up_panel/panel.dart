@@ -1,20 +1,20 @@
 /*
-Name: Zotov Vladimir
-Date: 18/06/22
-Purpose: Defines the package: sliding_up_panel2
-Copyright: © 2022, Zotov Vladimir. All rights reserved.
-Licensing: More information can be found here: https://github.com/Zotov-VD/sliding_up_panel/blob/master/LICENSE
-
-This product includes software developed by Akshath Jain (https://akshathjain.com)
+Name: Akshath Jain
+Date: 3/18/2019 - 4/2/2020
+Purpose: Defines the sliding_up_panel widget
+Copyright: © 2020, Akshath Jain. All rights reserved.
+Licensing: More information can be found here: https://github.com/akshathjain/sliding_up_panel/blob/master/LICENSE
 */
-
-import 'dart:math';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/physics.dart';
-import 'package:flutter/rendering.dart';
+import 'dart:math';
 
+import 'package:flutter/physics.dart';
+
+/// from 2.0.0+1
+/// update record: pengboboer add
+/// You can search: pengboboer add
 enum SlideDirection {
   UP,
   DOWN,
@@ -23,12 +23,21 @@ enum SlideDirection {
 enum PanelState { OPEN, CLOSED }
 
 class SlidingUpPanel extends StatefulWidget {
-  /// Returns the Widget that slides into view. When the
+  /// The Widget that slides into view. When the
   /// panel is collapsed and if [collapsed] is null,
   /// then top portion of this Widget will be displayed;
   /// otherwise, [collapsed] will be displayed overtop
-  /// of this Widget.
-  final Widget? Function()? panelBuilder;
+  /// of this Widget. If [panel] and [panelBuilder] are both non-null,
+  /// [panel] will be used.
+  final Widget? panel;
+
+  /// WARNING: This feature is still in beta and is subject to change without
+  /// notice. Stability is not gauranteed. Provides a [ScrollController] and
+  /// [ScrollPhysics] to attach to a scrollable object in the panel that links
+  /// the panel position with the scroll position. Useful for implementing an
+  /// infinite scroll behavior. If [panel] and [panelBuilder] are both non-null,
+  /// [panel] will be used.
+  final Widget Function(ScrollController sc)? panelBuilder;
 
   /// The Widget displayed overtop the [panel] when collapsed.
   /// This fades out as the panel is opened.
@@ -93,9 +102,6 @@ class SlidingUpPanel extends StatefulWidget {
   /// Set to false to disable the panel from snapping open or closed.
   final bool panelSnapping;
 
-  /// Disable panel draggable on scrolling. Defaults to false.
-  final bool disableDraggableOnScrolling;
-
   /// If non-null, this can be used to control the state of the panel.
   final PanelController? controller;
 
@@ -156,13 +162,10 @@ class SlidingUpPanel extends StatefulWidget {
   /// by default the Panel is open and must be swiped closed by the user.
   final PanelState defaultPanelState;
 
-  /// To attach to a [Scrollable] on a panel that
-  /// links the panel's position to the scroll position. Useful for implementing
-  /// infinite scroll behavior
-  final ScrollController? scrollController;
-
   SlidingUpPanel(
       {Key? key,
+      this.panel,
+      this.panelBuilder,
       this.body,
       this.collapsed,
       this.minHeight = 100.0,
@@ -181,7 +184,6 @@ class SlidingUpPanel extends StatefulWidget {
       this.margin,
       this.renderPanelSheet = true,
       this.panelSnapping = true,
-      this.disableDraggableOnScrolling = false,
       this.controller,
       this.backdropEnabled = false,
       this.backdropColor = Colors.black,
@@ -196,10 +198,8 @@ class SlidingUpPanel extends StatefulWidget {
       this.slideDirection = SlideDirection.UP,
       this.defaultPanelState = PanelState.CLOSED,
       this.header,
-      this.footer,
-      this.scrollController,
-      this.panelBuilder})
-      : assert(panelBuilder != null),
+      this.footer})
+      : assert(panel != null || panelBuilder != null),
         assert(0 <= backdropOpacity && backdropOpacity <= 1.0),
         assert(snapPoint == null || 0 < snapPoint && snapPoint < 1.0),
         super(key: key);
@@ -211,23 +211,29 @@ class SlidingUpPanel extends StatefulWidget {
 class _SlidingUpPanelState extends State<SlidingUpPanel>
     with SingleTickerProviderStateMixin {
   late AnimationController _ac;
-  late final ScrollController _sc;
+  ScrollController _sc = ScrollController();
 
   bool _scrollingEnabled = false;
+
   VelocityTracker _vt = new VelocityTracker.withKind(PointerDeviceKind.touch);
 
   bool _isPanelVisible = true;
 
+  /// pengboboer add
+  late VoidCallback scListener;
+
   @override
   void initState() {
     super.initState();
+
+    print("init 初始化");
 
     _ac = new AnimationController(
         vsync: this,
         duration: const Duration(milliseconds: 300),
         value: widget.defaultPanelState == PanelState.CLOSED
             ? 0.0
-            : 1.0 //set the default panel state (i.e. set initial value of _ac)
+            : 0.5 //set the default panel state (i.e. set initial value of _ac)
         )
       ..addListener(() {
         if (widget.onPanelSlide != null) widget.onPanelSlide!(_ac.value);
@@ -241,15 +247,14 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
 
     // prevent the panel content from being scrolled only if the widget is
     // draggable and panel scrolling is enabled
-    _sc = widget.scrollController ?? ScrollController();
-    print("_sc init");
-    _sc.addListener(() {
-      if (widget.isDraggable &&
-          !widget.disableDraggableOnScrolling &&
-          (!_scrollingEnabled || _panelPosition < 1) &&
-          widget.controller?._forceScrollChange != true)
-        _sc.jumpTo(_scMinffset);
-    });
+    /// pengboboer add
+    // _sc = new ScrollController();
+    // _sc.addListener(() {
+    //   if (widget.isDraggable && !_scrollingEnabled) _sc.jumpTo(0);
+    // });
+    scListener = () {
+      if (widget.isDraggable && !_scrollingEnabled) _sc.jumpTo(0);
+    };
 
     widget.controller?._addState(this);
   }
@@ -355,21 +360,10 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
                                   : 0),
                           child: Container(
                             height: widget.maxHeight,
-                            child: widget.panelBuilder!(),
+                            child: widget.panel != null
+                                ? widget.panel
+                                : widget.panelBuilder!(_sc),
                           )),
-
-                      // footer
-                      widget.footer != null
-                          ? Positioned(
-                              top: widget.slideDirection == SlideDirection.UP
-                                  ? null
-                                  : 0.0,
-                              bottom:
-                                  widget.slideDirection == SlideDirection.DOWN
-                                      ? null
-                                      : 0.0,
-                              child: widget.footer ?? SizedBox())
-                          : Container(),
 
                       // header
                       widget.header != null
@@ -383,6 +377,19 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
                                       : null,
                               child: widget.header ?? SizedBox(),
                             )
+                          : Container(),
+
+                      // footer
+                      widget.footer != null
+                          ? Positioned(
+                              top: widget.slideDirection == SlideDirection.UP
+                                  ? null
+                                  : 0.0,
+                              bottom:
+                                  widget.slideDirection == SlideDirection.DOWN
+                                      ? null
+                                      : 0.0,
+                              child: widget.footer ?? SizedBox())
                           : Container(),
 
                       // collapsed panel
@@ -426,6 +433,7 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
 
   @override
   void dispose() {
+    //print("ac结束里");
     _ac.dispose();
     super.dispose();
   }
@@ -441,10 +449,6 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
           widget.parallaxOffset;
   }
 
-  bool _ignoreScrollable = false;
-  bool _isHorizontalScrollableWidget = false;
-  Axis? _scrollableAxis;
-
   // returns a gesture detector if panel is used
   // and a listener if panelBuilder is used.
   // this is because the listener is designed only for use with linking the scrolling of
@@ -452,90 +456,47 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
   Widget _gestureHandler({required Widget child}) {
     if (!widget.isDraggable) return child;
 
+    if (widget.panel != null) {
+      return GestureDetector(
+        onVerticalDragUpdate: (DragUpdateDetails dets) =>
+            _onGestureSlide(dets.delta.dy),
+        onVerticalDragEnd: (DragEndDetails dets) =>
+            _onGestureEnd(dets.velocity),
+        child: child,
+      );
+    }
+
     return Listener(
-      onPointerDown: (PointerDownEvent e) {
-        var rb = context.findRenderObject() as RenderBox;
-        var result = BoxHitTestResult();
-        rb.hitTest(result, position: e.position);
-
-        if (_panelPosition == 1) {
-          _scMinffset = 0.0;
-        }
-        // if there any widget in the path that must force graggable,
-        // stop it right here
-        if (result.path.any((entry) =>
-            entry.target.runtimeType == _ForceDraggableWidgetRenderBox)) {
-          widget.controller?._nowTargetForceDraggable = true;
-          _scMinffset = _sc.offset;
-          _isHorizontalScrollableWidget = false;
-        } else if (result.path.any((entry) =>
-            entry.target.runtimeType == _HorizontalScrollableWidgetRenderBox)) {
-          _isHorizontalScrollableWidget = true;
-          widget.controller?._nowTargetForceDraggable = false;
-        } else if (result.path.any((entry) =>
-            entry.target.runtimeType ==
-            _IgnoreDraggableWidgetWidgetRenderBox)) {
-          _ignoreScrollable = true;
-          widget.controller?._nowTargetForceDraggable = false;
-          _isHorizontalScrollableWidget = false;
-          return;
-        } else {
-          widget.controller?._nowTargetForceDraggable = false;
-          _isHorizontalScrollableWidget = false;
-        }
-        _ignoreScrollable = false;
-        _vt.addPosition(e.timeStamp, e.position);
+      onPointerDown: (PointerDownEvent p) =>
+          _vt.addPosition(p.timeStamp, p.position),
+      onPointerMove: (PointerMoveEvent p) {
+        _vt.addPosition(p.timeStamp,
+            p.position); // add current position for velocity tracking
+        _onGestureSlide(p.delta.dy);
       },
-      onPointerMove: (PointerMoveEvent e) {
-        if (_scrollableAxis == null) {
-          if (e.delta.dx.abs() > e.delta.dy.abs()) {
-            _scrollableAxis = Axis.horizontal;
-          } else {
-            _scrollableAxis = Axis.vertical;
-          }
-        }
-
-        if (_isHorizontalScrollableWidget &&
-            _scrollableAxis == Axis.horizontal) {
-          return;
-        }
-
-        if (_ignoreScrollable) return;
-        _vt.addPosition(e.timeStamp,
-            e.position); // add current position for velocity tracking
-        _onGestureSlide(e.delta.dy);
-      },
-      onPointerUp: (PointerUpEvent e) {
-        if (_ignoreScrollable) return;
-        _scrollableAxis = null;
-        _onGestureEnd(_vt.getVelocity());
-      },
+      onPointerUp: (PointerUpEvent p) => _onGestureEnd(_vt.getVelocity()),
       child: child,
     );
   }
 
-  double _scMinffset = 0.0;
-
   // handles the sliding gesture
   void _onGestureSlide(double dy) {
-    print("处理手势滑动");
-    // only slide the panel if scrolling is not enabled
-    if (widget.controller?._nowTargetForceDraggable == false &&
-        widget.disableDraggableOnScrolling) {
-      print("手势滑动case1");
+    /// pengboboer add
+    if (!widget.isDraggable) {
+      //print("_onGestureSlide: !widget.isDraggable");
       return;
     }
-    if ((!_scrollingEnabled)
-        //  ||
-        //     _panelPosition < 1 ||
-        //     widget.controller?._nowTargetForceDraggable == true
-        ) {
+
+    // only slide the panel if scrolling is not enabled
+    if (!_scrollingEnabled) {
       if (widget.slideDirection == SlideDirection.UP) {
-        print("手势滑动case2");
+        // print("_onGestureSlide: widget.slideDirection == SlideDirection.UP");
+        // print("之前：$_ac.value");
         _ac.value -= dy / (widget.maxHeight - widget.minHeight);
-        print("$_isPanelOpen,  ${_sc.offset}");
+        //print("之后：$_ac.value");
       } else {
-        print("手势滑动case3");
+        // //print(
+        //     "_onGestureSlide: widget.slideDirection == SlideDirection.UPelse");
         _ac.value += dy / (widget.maxHeight - widget.minHeight);
       }
     }
@@ -543,26 +504,19 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
     // if the panel is open and the user hasn't scrolled, we need to determine
     // whether to enable scrolling if the user swipes up, or disable closing and
     // begin to close the panel if the user swipes down
-    if (_isPanelOpen && _sc.hasClients && _sc.offset <= _scMinffset) {
-      //if (_isPanelOpen && _sc.hasClients && _sc.offset <= 0) {
+    if (_isPanelOpen && _sc.hasClients && _sc.offset <= 0) {
       setState(() {
-        print("dy = $dy");
         if (dy < 0) {
           _scrollingEnabled = true;
         } else {
           _scrollingEnabled = false;
         }
-        print("dy = $dy, $_scrollingEnabled");
       });
     }
   }
 
   // handles when user stops sliding
   void _onGestureEnd(Velocity v) {
-    if (widget.controller?._nowTargetForceDraggable == false &&
-        widget.disableDraggableOnScrolling) {
-      return;
-    }
     double minFlingVelocity = 365.0;
     double kSnap = 8;
 
@@ -572,6 +526,9 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
     // if scrolling is allowed and the panel is open, we don't want to close
     // the panel if they swipe up on the scrollable
     if (_isPanelOpen && _scrollingEnabled) return;
+
+    /// pengboboer add
+    if (!widget.isDraggable) return;
 
     //check if the velocity is sufficient to constitute fling to end
     double visualVelocity =
@@ -588,15 +545,29 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
         .abs(); // large value if null results in not every being the min
     double minDistance = min(d2Close, min(d2Snap, d2Open));
 
-    // check if velocity is sufficient for a fling
+    //print("距离： $d2Close, $d2Open, $d2Snap, $minDistance, ${_ac.value}");
+    // check if velocity is sufficient for a fling，每秒滑动的像素>365.0，启动fling
     if (v.pixelsPerSecond.dy.abs() >= minFlingVelocity) {
       // snapPoint exists
       if (widget.panelSnapping && widget.snapPoint != null) {
+        //时速超快，跨过中点; 离中点最近向两边滑肯定向2边
         if (v.pixelsPerSecond.dy.abs() >= kSnap * minFlingVelocity ||
-            minDistance == d2Snap)
-          _ac.fling(velocity: visualVelocity);
-        else
+            minDistance == d2Snap) {
+          // print("_ac.fling(velocity: visualVelocity); ");
+          // if (minDistance == d2Snap) print("中点最近");
+          // print(
+          //     "${v.pixelsPerSecond.dy.abs()}, $kSnap*$minFlingVelocity = ${kSnap * minFlingVelocity}, $minDistance, $d2Snap, 飞到两头  $visualVelocity");
+          //if(visualVelocity<0)
+          //print('$visualVelocity');
+          visualVelocity < 0
+              ? Navigator.pop(context)
+              : _ac.fling(velocity: visualVelocity);
+        } else {
+          // print(
+          //     "${v.pixelsPerSecond.dy.abs()},  $kSnap*$minFlingVelocity = ${kSnap * minFlingVelocity},$minDistance, $d2Snap, 飞到中间  $visualVelocity");
+          // print(" _flingPanelToPosition(widget.snapPoint!, visualVelocity);");
           _flingPanelToPosition(widget.snapPoint!, visualVelocity);
+        }
 
         // no snap point exists
       } else if (widget.panelSnapping) {
@@ -615,15 +586,18 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
     }
 
     // check if the controller is already halfway there
-    if (widget.panelSnapping) {
-      if (minDistance == d2Close) {
-        _close();
-      } else if (minDistance == d2Snap) {
-        _flingPanelToPosition(widget.snapPoint!, visualVelocity);
-      } else {
-        _open();
-      }
-    }
+    // if (widget.panelSnapping) {
+    //   print('一个奇怪的地方 $minDistance, $d2Close, $d2Snap');
+    //   if (minDistance == d2Close) {
+    //     //print("调用widget.panelSnapping关闭");
+    //     _close();
+    //   } else if (minDistance == d2Snap) {
+    //     _flingPanelToPosition(widget.snapPoint!, visualVelocity);
+    //   } else {
+    //     print("一个奇怪的地方调用了_open");
+    //     _open();
+    //   }
+    // }
   }
 
   void _flingPanelToPosition(double targetPos, double velocity) {
@@ -646,12 +620,15 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
 
   //close the panel
   Future<void> _close() {
+    //print("调用_close关闭");
     return _ac.fling(velocity: -1.0);
   }
 
   //open the panel
-  Future<void> _open() {
-    return _ac.fling(velocity: 1.0);
+  Future<void> _open() async {
+    print("panel open");
+    _flingPanelToPosition(widget.snapPoint!, 1.0);
+    //return _ac.fling(velocity: 1.0);
   }
 
   //hide the panel (completely offscreen)
@@ -715,6 +692,34 @@ class _SlidingUpPanelState extends State<SlidingUpPanel>
   //returns whether or not the
   //panel is shown/hidden
   bool get _isPanelShown => _isPanelVisible;
+
+  /// this three methods
+  /// pengboboer add
+  set sc(ScrollController value) {
+    _sc = value;
+    if (_sc.hasListeners) {
+      _sc.removeListener(scListener);
+    }
+    _sc.addListener(scListener);
+  }
+
+  set scrollingEnabled(bool value) {
+    _scrollingEnabled = value;
+  }
+
+  void onChildWidgetPointerMove(PointerMoveEvent p) {
+    if (!widget.isDraggable) return;
+    _vt.addPosition(
+        p.timeStamp, p.position); // add current position for velocity tracking
+    double dy = p.delta.dy;
+    // only slide the panel if scrolling is not enabled
+    if (_scrollingEnabled) {
+      if (widget.slideDirection == SlideDirection.UP)
+        _ac.value -= dy / (widget.maxHeight - widget.minHeight);
+      else
+        _ac.value += dy / (widget.maxHeight - widget.minHeight);
+    }
+  }
 }
 
 class PanelController {
@@ -724,26 +729,6 @@ class PanelController {
     this._panelState = panelState;
   }
 
-  bool _forceScrollChange = false;
-
-  /// use this function when scroll change in func
-  /// Example:
-  /// panelController.forseScrollChange(scrollController.animateTo(100, duration: Duration(milliseconds: 400), curve: Curves.ease))
-  Future<void> forseScrollChange(Future func) async {
-    _forceScrollChange = true;
-    _panelState!._scrollingEnabled = true;
-    await func;
-    // if (_panelState!._sc.offset == 0) {
-    //   _panelState!._scrollingEnabled = true;
-    // }
-    if (panelPosition < 1) {
-      _panelState!._scMinffset = _panelState!._sc.offset;
-    }
-    _forceScrollChange = false;
-  }
-
-  bool _nowTargetForceDraggable = false;
-
   /// Determine if the panelController is attached to an instance
   /// of the SlidingUpPanel (this property must return true before any other
   /// functions can be used)
@@ -752,6 +737,7 @@ class PanelController {
   /// Closes the sliding panel to its collapsed state (i.e. to the  minHeight)
   Future<void> close() {
     assert(isAttached, "PanelController must be attached to a SlidingUpPanel");
+    //print("调用close关闭");
     return _panelState!._close();
   }
 
@@ -848,107 +834,23 @@ class PanelController {
     assert(isAttached, "PanelController must be attached to a SlidingUpPanel");
     return _panelState!._isPanelShown;
   }
-}
 
-/// if you want to prevent the panel from being dragged using the widget,
-/// wrap the widget with this
-class IgnoreDraggableWidget extends SingleChildRenderObjectWidget {
-  final Widget child;
-
-  IgnoreDraggableWidget({
-    required this.child,
-  }) : super(
-          child: child,
-        );
-
-  @override
-  _IgnoreDraggableWidgetWidgetRenderBox createRenderObject(
-    BuildContext context,
-  ) {
-    return _IgnoreDraggableWidgetWidgetRenderBox();
-  }
-}
-
-class _IgnoreDraggableWidgetWidgetRenderBox extends RenderPointerListener {
-  @override
-  HitTestBehavior get behavior => HitTestBehavior.opaque;
-}
-
-/// if you want to force the panel to be dragged using the widget,
-/// wrap the widget with this
-/// For example, use [Scrollable] inside to allow the panel to be dragged
-///  even if the scroll is not at position 0.
-class ForceDraggableWidget extends SingleChildRenderObjectWidget {
-  final Widget child;
-
-  ForceDraggableWidget({
-    required this.child,
-  }) : super(
-          child: child,
-        );
-
-  @override
-  _ForceDraggableWidgetRenderBox createRenderObject(
-    BuildContext context,
-  ) {
-    return _ForceDraggableWidgetRenderBox();
-  }
-}
-
-class _ForceDraggableWidgetRenderBox extends RenderPointerListener {
-  @override
-  HitTestBehavior get behavior => HitTestBehavior.opaque;
-}
-
-/// To make [ForceDraggableWidget] work in [Scrollable] widgets
-class PanelScrollPhysics extends ScrollPhysics {
-  final PanelController controller;
-  const PanelScrollPhysics({required this.controller, ScrollPhysics? parent})
-      : super(parent: parent);
-  @override
-  PanelScrollPhysics applyTo(ScrollPhysics? ancestor) {
-    return PanelScrollPhysics(
-        controller: controller, parent: buildParent(ancestor));
+  /// this four methods
+  /// pengboboer add
+  void clear() {
+    _panelState = null;
   }
 
-  @override
-  double applyPhysicsToUserOffset(ScrollMetrics position, double offset) {
-    if (controller._nowTargetForceDraggable) return 0.0;
-    return super.applyPhysicsToUserOffset(position, offset);
+  void setScrollController(ScrollController sc) {
+    //print("panel设置sc");
+    _panelState!.sc = sc;
   }
 
-  @override
-  Simulation? createBallisticSimulation(
-      ScrollMetrics position, double velocity) {
-    if (controller._nowTargetForceDraggable)
-      return super.createBallisticSimulation(position, 0);
-    return super.createBallisticSimulation(position, velocity);
+  void setScrollEnable(bool enable) {
+    _panelState!.scrollingEnabled = enable;
   }
 
-  @override
-  bool get allowImplicitScrolling => false;
-}
-
-/// if you want to prevent unwanted panel dragging when scrolling widgets [Scrollable] with horizontal axis
-/// wrap the widget with this
-class HorizontalScrollableWidget extends SingleChildRenderObjectWidget {
-  final Widget child;
-
-  HorizontalScrollableWidget({
-    required this.child,
-  }) : super(
-          child: child,
-        );
-
-  @override
-  _HorizontalScrollableWidgetRenderBox createRenderObject(
-    BuildContext context,
-  ) {
-    return _HorizontalScrollableWidgetRenderBox();
+  void onChildWidgetPointerMove(PointerMoveEvent p) {
+    _panelState!.onChildWidgetPointerMove(p);
   }
-}
-
-class _HorizontalScrollableWidgetRenderBox extends RenderPointerListener {
-  @override
-  HitTestBehavior get behavior => HitTestBehavior.opaque;
 }

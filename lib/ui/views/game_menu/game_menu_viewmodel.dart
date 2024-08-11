@@ -5,20 +5,18 @@ import 'package:stacked/stacked.dart';
 
 class GameMenuViewModel extends BaseViewModel {
   final _panelBaseService = locator<PanelBaseService>();
-
-  final ScrollController gameMenuSc = ScrollController();
   PanelBaseService get panelBaseService => _panelBaseService;
+  final _gameMenuSc = ScrollController();
+  ScrollController get sc => _gameMenuSc;
+  void setPanelSc() {
+    _panelBaseService.setPanelSc(_gameMenuSc);
+  }
 
-  // GameMenuViewModel() {
-  //   print("setPanelScToGameMenu");
-  //   _panelBaseService.sc = gameMenuSc;
-  // }
+  GameMenuViewModel() {
+    //print("初始化setPanelScToGameMenu");
+    setPanelSc();
+  }
 
   bool get isGuestLogin => _panelBaseService.isGuestLogin;
-
   void onTapGuestLogin() {}
-
-  // void setScToPersnalCenter() {
-  //   _panelBaseService.sc = gameMenuSc;
-  // }
 }

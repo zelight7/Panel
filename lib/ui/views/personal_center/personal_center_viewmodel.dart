@@ -8,16 +8,17 @@ import 'package:stacked_services/stacked_services.dart';
 class PeronalCenterViewModel extends BaseViewModel {
   final _panelBaseService = locator<PanelBaseService>();
   final _bottomSheetService = locator<BottomSheetService>();
-  //final personalCenterSc = locator<PanelBaseService>().personalCenterSc;
-  // ScrollController get personalCenterSc =>
-  //     locator<PanelBaseService>().personalCenterSc;
-  final ScrollController personalCenterSc = ScrollController();
+
+  final _personalCenterSc = ScrollController();
+  ScrollController get sc => _personalCenterSc;
+
   final TextEditingController textEditingController = TextEditingController();
   bool isShowTextField = false;
   PanelBaseService get panelBaseService => _panelBaseService;
-  // PeronalCenterViewModel() {
-  //   _panelBaseService.sc = personalCenterSc;
-  // }
+  PeronalCenterViewModel() {
+    //print("初始化personalCenter的sc");
+    setPanelSc();
+  }
 
   bool get isGuestLogin => _panelBaseService.isGuestLogin;
   bool _switch2FA = false;
@@ -27,9 +28,13 @@ class PeronalCenterViewModel extends BaseViewModel {
     rebuildUi();
   }
 
+  void setPanelSc() {
+    _panelBaseService.setPanelSc(_personalCenterSc);
+  }
+
   // void setPanelScToGameMenu() {
   //   print("setPanelScToGameMenu");
-  //   _panelBaseService.setPanelScToGameMenu();
+  //   _panelBaseService.setPanelSc(_personalCenterSc);
   // }
 
   bool _switchNotification = false;
@@ -58,7 +63,13 @@ class PeronalCenterViewModel extends BaseViewModel {
   void onTapLogout() {}
 
   void onButtonPressed() {
-    print('rebuild');
-    rebuildUi();
+    _bottomSheetService.showCustomSheet(
+      variant: BottomSheetType.showPanel,
+      isScrollControlled: true,
+      enableDrag: false,
+      //barrierDismissible: false,
+      useRootNavigator: true,
+      //exitBottomSheetDuration: Duration(milliseconds: 0),
+    );
   }
 }

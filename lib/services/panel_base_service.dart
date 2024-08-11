@@ -5,15 +5,11 @@ import 'package:panel/sliding_up_panel/panel.dart';
 import 'package:stacked/stacked.dart';
 
 class PanelBaseService with ListenableServiceMixin {
-  //final _loginService = locator<LoginService>();
   PanelController controller = PanelController();
-  ScrollController sc = ScrollController();
 
-  // ScrollController get sc => _sc;
-  // set sc(ScrollController value) {
-  //   _sc = value;
-  //   setPanelSc();
-  // }
+  void setPanelSc(ScrollController sc) {
+    controller.setScrollController(sc);
+  }
 
   bool _isDraggable = true;
   bool get isDraggable => _isDraggable;
@@ -30,16 +26,8 @@ class PanelBaseService with ListenableServiceMixin {
     }
   }
 
-  // void clear() {
-  //   controller.clear();
-  // }
-
   Future<void> open() async {
     notifyListeners();
     await controller.open();
   }
-
-  // void setPanelSc() {
-  //   controller.setScrollController(_sc);
-  // }
 }

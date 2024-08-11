@@ -17,6 +17,7 @@ class HomeView extends StackedView<HomeViewModel> {
     Widget? child,
   ) {
     return Scaffold(
+      appBar: AppBar(title: Text("aaa")),
       body: Stack(
         children: [
           SafeArea(
@@ -44,7 +45,6 @@ class HomeView extends StackedView<HomeViewModel> {
                           CupertinoPageRoute(
                             builder: (context) {
                               return const PeronalCenterView();
-                              //viewModel.showBottomSheet();
                             },
                           ),
                         );
@@ -82,7 +82,19 @@ class HomeView extends StackedView<HomeViewModel> {
                           children: [
                             MaterialButton(
                               color: kcDarkGreyColor,
-                              onPressed: viewModel.showDialog,
+                              //onPressed: viewModel.showDialog,
+                              onPressed: () {
+                                Navigator.push(
+                                  context,
+                                  //CupertinoPageRoute风格
+                                  CupertinoPageRoute(
+                                    builder: (context) {
+                                      return const HomeView();
+                                    },
+                                  ),
+                                );
+                              },
+
                               child: const Text(
                                 'Show Dialog',
                                 style: TextStyle(
